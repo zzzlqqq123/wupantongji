@@ -436,24 +436,27 @@ class GUIManager:
         toolbar = ttkb.Frame(image_frame)
         toolbar.pack(fill=tk.X, pady=(0, 10))
 
-        # 左侧：导航按钮
+        # 左侧：导航按钮（上下排版，避免与左右键混淆）
+        nav_frame = ttkb.Frame(toolbar)
+        nav_frame.pack(side=tk.LEFT, padx=2)
+
         self.prev_btn = ttkb.Button(
-            toolbar,
-            text="◀ 上一张",
+            nav_frame,
+            text="▲ 上一张 (↑)",
             command=self.on_previous_image,
-            width=10,
+            width=12,
             bootstyle="secondary"
         )
-        self.prev_btn.pack(side=tk.LEFT, padx=2)
+        self.prev_btn.pack(side=tk.TOP, pady=(0, 2))
 
         self.next_btn = ttkb.Button(
-            toolbar,
-            text="下一张 ▶",
+            nav_frame,
+            text="▼ 下一张 (↓)",
             command=self.on_next_image,
-            width=10,
+            width=12,
             bootstyle="secondary"
         )
-        self.next_btn.pack(side=tk.LEFT, padx=2)
+        self.next_btn.pack(side=tk.TOP, pady=(2, 0))
 
         # 中间：标注状态标签
         self.annotation_label = ttkb.Label(
@@ -559,7 +562,7 @@ class GUIManager:
         # 误判按钮（红色工业风）
         self.misjudgment_btn = ttkb.Button(
             button_frame,
-            text="✗ 误判",
+            text="✗ 误判 (←)",
             command=self.on_misjudgment,
             width=18,
             bootstyle="danger-outline"
@@ -569,7 +572,7 @@ class GUIManager:
         # 检出按钮（绿色工业风）
         self.detection_btn = ttkb.Button(
             button_frame,
-            text="✓ 检出",
+            text="✓ 检出 (→)",
             command=self.on_detection,
             width=18,
             bootstyle="success-outline"
@@ -643,7 +646,15 @@ class GUIManager:
         instruction_text.pack(fill=tk.BOTH, expand=True)
 
         # 操作步骤内容
-        steps = """1. 配置 → 设置误判种类（首次设置，后续自动读取config.json）
+        steps = """【快捷键操作】
+• ↑ 键：上一张图片
+• ↓ 键：下一张图片
+• ← 键：误判
+• → 键：检出
+• 1-9 键：快速选择/取消缺陷类型
+
+【基本操作步骤】
+1. 配置 → 设置误判种类（首次设置，后续自动读取config.json）
 2. 文件 → 选择文件夹
 3. 配置 → 设置总产能
 4. 查看图片，标注误判或检出
@@ -679,11 +690,15 @@ class GUIManager:
         for index, type_name in enumerate(misjudgment_types):
             row = index // checkboxes_per_row
             col = index % checkboxes_per_row
-            
+
             var = tk.BooleanVar()
+
+            # 动态生成快捷键提示（显示所有缺陷类型）
+            shortcut_hint = f" ({index + 1})"
+
             checkbox = ttkb.Checkbutton(
                 self.checkbox_container,
-                text=type_name,
+                text=f"{type_name}{shortcut_hint}",
                 variable=var,
                 bootstyle="success-round-toggle",
                 style="LargeCheckbutton.TCheckbutton"
@@ -1042,6 +1057,25 @@ class GUIManager:
             if var.get():
                 selected.append(type_name)
         return selected
+
+    def toggle_type_by_index(self, index):
+        """
+        通过索引切换复选框状态（键盘快捷键调用）
+
+        Args:
+            index: 复选框索引（从0开始）
+        """
+        # 获取当前的误判类型列表
+        type_names = list(self.checkbox_vars.keys())
+
+        # 检查索引是否有效
+        if 0 <= index < len(type_names):
+            type_name = type_names[index]
+            var = self.checkbox_vars[type_name]
+
+            # 切换复选框状态
+            current_state = var.get()
+            var.set(not current_state)
 
     def get_misjudgment_reason(self):
         """

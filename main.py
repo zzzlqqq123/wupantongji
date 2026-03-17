@@ -38,7 +38,19 @@ class MisjudgmentApp:
 
     def bind_shortcuts(self):
         """绑定快捷键"""
-        pass  # 无快捷键绑定
+        # 图片导航 - 上下方向键
+        self.root.bind('<Up>', lambda e: self.gui_manager.on_previous_image())
+        self.root.bind('<Down>', lambda e: self.gui_manager.on_next_image())
+
+        # 误判/检出操作 - 左右方向键
+        self.root.bind('<Left>', lambda e: self.gui_manager.on_misjudgment())
+        self.root.bind('<Right>', lambda e: self.gui_manager.on_detection())
+
+        # 缺陷类型快速选择 - 数字键动态绑定（根据配置的缺陷类型数量）
+        for index in range(len(self.misjudgment_types)):
+            # 键盘按键名称为 Key-1, Key-2, ... Key-9
+            key_name = f'<Key-{index + 1}>'
+            self.root.bind(key_name, lambda e, idx=index: self.gui_manager.toggle_type_by_index(idx))
 
     def run(self):
         """启动应用程序"""

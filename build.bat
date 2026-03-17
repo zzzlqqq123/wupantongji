@@ -1,45 +1,44 @@
 @echo off
-chcp 65001 >nul
 REM ========================================
-REM 快速打包脚本
+REM Quick Build Script
 REM ========================================
 
 echo.
 echo ========================================
-echo    正在打包...
+echo    Building...
 echo ========================================
 echo.
 
-REM 检查并安装依赖
-echo [提示] 检查依赖包...
+REM Check and install dependencies
+echo [Info] Checking dependencies...
 python -c "import PyInstaller" 2>nul
 if errorlevel 1 (
-    echo [提示] 正在安装 PyInstaller...
+    echo [Info] Installing PyInstaller...
     python -m pip install pyinstaller -i https://pypi.tuna.tsinghua.edu.cn/simple
 )
 
 python -c "import ttkbootstrap" 2>nul
 if errorlevel 1 (
-    echo [提示] 正在安装 ttkbootstrap...
+    echo [Info] Installing ttkbootstrap...
     python -m pip install ttkbootstrap -i https://pypi.tuna.tsinghua.edu.cn/simple
 )
 
 python -c "import PIL" 2>nul
 if errorlevel 1 (
-    echo [提示] 正在安装 Pillow...
+    echo [Info] Installing Pillow...
     python -m pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 )
 
-echo [提示] 清理旧文件...
+echo [Info] Cleaning old files...
 if exist "build" rmdir /s /q "build" 2>nul
 if exist "dist" rmdir /s /q "dist" 2>nul
 
 echo.
-echo [提示] 开始打包 (需要 20-60 秒)...
+echo [Info] Starting build (20-60 seconds)...
 echo.
 
-REM 执行打包 - 添加隐藏导入以确保所有模块都被包含
-python -m PyInstaller --onefile --windowed --name "误判统计小程序" --clean --noconfirm ^
+REM Execute build - add hidden imports
+python -m PyInstaller --onefile --windowed --name "MisjudgmentStats" --clean --noconfirm ^
     --hidden-import=ttkbootstrap ^
     --hidden-import=PIL ^
     --hidden-import=openpyxl ^
@@ -54,18 +53,18 @@ python -m PyInstaller --onefile --windowed --name "误判统计小程序" --clea
 
 echo.
 echo ========================================
-if exist "dist\误判统计小程序.exe" (
-    echo [成功] 打包完成！
+if exist "dist\MisjudgmentStats.exe" (
+    echo [Success] Build complete!
     echo ========================================
     echo.
-    echo 输出文件: dist\误判统计小程序.exe
+    echo Output: dist\MisjudgmentStats.exe
     echo.
     start explorer dist
 ) else (
-    echo [失败] 打包失败，请检查上方错误信息
+    echo [Failed] Build failed, check errors above
     echo ========================================
 )
 
 echo.
-echo 按任意键关闭...
+echo Press any key to close...
 pause >nul
