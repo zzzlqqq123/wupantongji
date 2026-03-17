@@ -1,0 +1,50 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(cmd.exe /c build.bat)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git rev-list:*)",
+      "Bash(设置总产能\"输入总产能\n2. 误判率会实时根据误判数量和总产能计算\n3. 如果未设置总产能，误判率显示为 0%\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(find:*)",
+      "Bash(cmd:*)",
+      "Bash(where:*)",
+      "Bash(conda run:*)",
+      "Bash(cmd.exe:*)",
+      "Bash(explorer:*)",
+      "Bash(build:*)",
+      "Bash(pyinstaller:*)",
+      "Read(*)",
+      "Write(*.md)",
+      "Edit(*.md)",
+      "Read(config.json)",
+      "Write(config.json)",
+      "Read(功能更新说明.md)",
+      "Write(功能更新说明.md)",
+      "Bash(git rm:*)",
+      "Bash(python .claude/skills/auto-version/*)",
+      "Bash(git reset:*)",
+      "Bash(git push:*)",
+      "Bash(git gc:*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/skills/auto-version/version_helper.py"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+# 误判统计小程序依赖列表
+#
+# 安装方法:
+# pip install -r requirements.txt
+
+# 图片处理库
+Pillow>=10.0.0
+
+# Excel导出支持
+openpyxl>=3.0.0
+
+# UI框架（现代化界面）
+ttkbootstrap>=1.10.0
