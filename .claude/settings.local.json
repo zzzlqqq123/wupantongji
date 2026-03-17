@@ -31,7 +31,8 @@
       "Bash(python .claude/skills/auto-version/*)",
       "Bash(git reset:*)",
       "Bash(git push:*)",
-      "Bash(git gc:*)"
+      "Bash(git gc:*)",
+      "Bash(ssh:*)"
     ]
   },
   "hooks": {
