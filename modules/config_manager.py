@@ -36,7 +36,7 @@ class ConfigManager:
 
     def _create_default_config(self):
         """创建默认配置"""
-        default_types = ["虚焊", "内缩", "焊带超出", "汇流条偏移", "爬电距离", "串间距", "焊带偏移", "折弯"]
+        default_types = ["化锡NG", "隔离膜NG", "跳线偏移NG", "几字形NG", "跳线搭接NG"]
         self.save_types(default_types)
         return default_types
 

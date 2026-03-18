@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/Version-v2.55-blue)](功能更新说明.md)
+[![Version](https://img.shields.io/badge/Version-v2.61-blue)](功能更新说明.md)
 
 一个专为质检人员设计的图片缺陷误判率统计工具
 
@@ -371,6 +371,7 @@ A: 掌握以下快捷键可大幅提升效率：
 
 ### 近期更新
 
+- v2.59 - 更新默认缺陷类型配置（化锡NG、隔离膜NG、跳线偏移NG、几字形NG、跳线搭接NG）
 - v2.35 - 新增完整键盘快捷键支持（方向键导航+数字键选类型）
 - v2.30 - 新增Excel格式导出功能，支持班次和产线信息记录
 - v2.20 - 新增误判图片导出功能，一键导出误判图片及同条码图片
