@@ -443,7 +443,7 @@ class GUIManager:
         self.prev_btn = ttkb.Button(
             nav_frame,
             text="▲ 上一张 (↑)",
-            command=self.on_previous_image,
+            command=self.on_previous_image_with_feedback,
             width=12,
             bootstyle="secondary"
         )
@@ -452,7 +452,7 @@ class GUIManager:
         self.next_btn = ttkb.Button(
             nav_frame,
             text="▼ 下一张 (↓)",
-            command=self.on_next_image,
+            command=self.on_next_image_with_feedback,
             width=12,
             bootstyle="secondary"
         )
@@ -563,7 +563,7 @@ class GUIManager:
         self.misjudgment_btn = ttkb.Button(
             button_frame,
             text="✗ 误判 (←)",
-            command=self.on_misjudgment,
+            command=self.on_misjudgment_with_feedback,
             width=18,
             bootstyle="danger-outline"
         )
@@ -573,7 +573,7 @@ class GUIManager:
         self.detection_btn = ttkb.Button(
             button_frame,
             text="✓ 检出 (→)",
-            command=self.on_detection,
+            command=self.on_detection_with_feedback,
             width=18,
             bootstyle="success-outline"
         )
@@ -1058,6 +1058,25 @@ class GUIManager:
                 selected.append(type_name)
         return selected
 
+    def flash_button(self, button, original_style, flash_style="info", duration=150):
+        """
+        按钮闪烁视觉反馈效果
+
+        Args:
+            button: 要闪烁的按钮对象
+            original_style: 原始bootstyle样式
+            flash_style: 闪烁时的样式（默认info）
+            duration: 闪烁持续时间（毫秒）
+        """
+        try:
+            # 设置为高亮样式
+            button.configure(bootstyle=flash_style)
+            # 定时恢复原始样式
+            self.root.after(duration, lambda: button.configure(bootstyle=original_style))
+        except Exception:
+            # 出错时确保恢复原始样式
+            self.root.after(duration, lambda: button.configure(bootstyle=original_style))
+
     def toggle_type_by_index(self, index):
         """
         通过索引切换复选框状态（键盘快捷键调用）
@@ -1130,6 +1149,26 @@ class GUIManager:
     def on_next_image(self):
         """下一张图片事件"""
         self.app.next_image_manual()
+
+    def on_previous_image_with_feedback(self):
+        """上一张图片（带视觉反馈）"""
+        self.flash_button(self.prev_btn, "secondary", "info")
+        self.on_previous_image()
+
+    def on_next_image_with_feedback(self):
+        """下一张图片（带视觉反馈）"""
+        self.flash_button(self.next_btn, "secondary", "info")
+        self.on_next_image()
+
+    def on_misjudgment_with_feedback(self):
+        """误判操作（带视觉反馈）"""
+        self.flash_button(self.misjudgment_btn, "danger-outline", "danger")
+        self.on_misjudgment()
+
+    def on_detection_with_feedback(self):
+        """检出操作（带视觉反馈）"""
+        self.flash_button(self.detection_btn, "success-outline", "success")
+        self.on_detection()
 
     def update_annotation_status(self, image_path):
         """
