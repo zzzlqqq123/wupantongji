@@ -114,7 +114,7 @@ class BarcodeSearcher:
     @staticmethod
     def search_images_by_barcodes(search_root, barcodes, ng_only=True):
         """
-        在指定根目录下搜索包含指定条码的所有图片（包括所有子文件夹）
+        在指定根目录下搜索包含指定条码的所有图片（包括所有子文件夹，排除名为ALL的文件夹）
         
         Args:
             search_root: 搜索的根目录路径
@@ -141,6 +141,9 @@ class BarcodeSearcher:
         
         # 递归遍历所有文件
         for dirpath, dirnames, filenames in os.walk(search_root):
+            # 过滤掉名为ALL的文件夹
+            dirnames[:] = [d for d in dirnames if d.lower() != 'all']
+            
             # 遍历当前文件夹中的所有文件
             for filename in filenames:
                 # 只处理图片文件

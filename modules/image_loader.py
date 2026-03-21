@@ -17,7 +17,7 @@ class ImageLoader:
 
     def load_folder(self, folder_path):
         """
-        加载文件夹中的所有图片
+        加载文件夹中的所有图片，包括子文件夹（排除名为ALL的文件夹）
 
         Args:
             folder_path: 文件夹路径
@@ -35,10 +35,18 @@ class ImageLoader:
         self.image_folder = folder_path
         self.image_list = []
 
-        # 遍历文件夹，查找所有支持的图片文件
-        for filename in os.listdir(folder_path):
-            if self._is_image_file(filename):
-                self.image_list.append(os.path.join(folder_path, filename))
+        # 遍历文件夹及其子文件夹，查找所有支持的图片文件
+        def traverse_directory(directory):
+            for item in os.listdir(directory):
+                item_path = os.path.join(directory, item)
+                if os.path.isdir(item_path):
+                    # 跳过名为ALL的文件夹
+                    if item.lower() != 'all':
+                        traverse_directory(item_path)
+                elif self._is_image_file(item):
+                    self.image_list.append(item_path)
+
+        traverse_directory(folder_path)
 
         # 按文件名排序
         self.image_list.sort()

@@ -558,121 +558,173 @@ class DataHandler:
                    stats 包含 {'total_barcodes': int, 'total_images': int, 'barcode_details': dict}
         """
         try:
-            # 1. 获取所有误判图片列表
-            details = self.current_session.get('details', [])
-            misjudgment_images = [
-                detail['image_name'] 
-                for detail in details 
-                if detail['result'] == 'misjudgment'
-            ]
-            
-            if not misjudgment_images:
-                return (False, "没有误判图片可导出", {})
-            
-            if progress_callback:
-                progress_callback(0, 100, "正在提取条码...")
-            
-            # 2. 提取所有误判图片的条码（只处理文件名中包含"NG"的图片）
-            misjudgment_barcodes = set()
-            # 记录每个条码对应的误判图片列表（用于生成清单）
-            barcode_to_misjudgment = {}
-            
-            for img_name in misjudgment_images:
-                # 只处理文件名中包含"NG"的图片
-                if not BarcodeSearcher.is_ng_image(img_name):
-                    continue
+            # 创建日志文件
+            log_file = os.path.join(output_folder, "export_log.txt")
+            with open(log_file, 'w', encoding='utf-8') as log:
+                log.write(f"[导出开始] {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                log.write(f"导出目标文件夹: {output_folder}\n")
+                log.write(f"原始图片文件夹: {folder_path}\n")
+                
+                # 1. 获取所有误判图片列表
+                details = self.current_session.get('details', [])
+                log.write(f"当前会话详情数量: {len(details)}\n")
+                
+                misjudgment_images = [
+                    detail['image_name'] 
+                    for detail in details 
+                    if detail['result'] == 'misjudgment'
+                ]
+                
+                log.write(f"误判图片数量: {len(misjudgment_images)}\n")
+                for img in misjudgment_images:
+                    log.write(f"  - {img}\n")
+                
+                if not misjudgment_images:
+                    log.write("[导出结束] 没有误判图片可导出\n")
+                    return (False, "没有误判图片可导出", {})
+                
+                if progress_callback:
+                    progress_callback(0, 100, "正在提取条码...")
+                
+                # 2. 提取所有误判图片的条码（不过滤图片，所有误判图片都处理）
+                misjudgment_barcodes = set()
+                # 记录每个条码对应的误判图片列表（用于生成清单）
+                barcode_to_misjudgment = {}
+                
+                for img_name in misjudgment_images:
+                    # 处理所有误判图片，不管文件名是否包含"NG"
+                    barcode = BarcodeSearcher.extract_barcode(img_name)
+                    log.write(f"处理图片: {img_name}, 提取条码: {barcode}\n")
                     
-                barcode = BarcodeSearcher.extract_barcode(img_name)
-                misjudgment_barcodes.add(barcode)
-                if barcode not in barcode_to_misjudgment:
-                    barcode_to_misjudgment[barcode] = []
-                barcode_to_misjudgment[barcode].append(img_name)
-            
-            if progress_callback:
-                progress_callback(10, 100, f"已提取 {len(misjudgment_barcodes)} 个条码，正在搜索同条码图片...")
-            
-            # 3. 在搜索根目录（向上2级）搜索所有同条码且包含"NG"的图片
-            # 例如：选择 E:\Image\2026-01-28-白班\检测拼接总图\NG 时，
-            # 会在 E:\Image\2026-01-28-白班\ 目录下搜索所有子文件夹中
-            # 文件名同时包含条码和"NG"的图片
-            search_root = BarcodeSearcher.get_search_root(folder_path)
-            barcode_images = BarcodeSearcher.search_images_by_barcodes(
-                search_root, 
-                misjudgment_barcodes,
-                ng_only=True  # 只搜索包含"NG"的图片
-            )
-            
-            if progress_callback:
-                progress_callback(30, 100, "搜索完成，正在准备导出...")
-            
-            # 4. 按条码创建文件夹并复制图片
-            total_images = 0
-            barcode_details = {}  # 用于生成清单
-            
-            barcode_count = len(misjudgment_barcodes)
-            for idx, barcode in enumerate(misjudgment_barcodes):
-                # 创建条码文件夹
-                barcode_folder = os.path.join(output_folder, barcode)
-                os.makedirs(barcode_folder, exist_ok=True)
+                    misjudgment_barcodes.add(barcode)
+                    if barcode not in barcode_to_misjudgment:
+                        barcode_to_misjudgment[barcode] = []
+                    barcode_to_misjudgment[barcode].append(img_name)
                 
-                # 获取该条码的所有图片
-                images = barcode_images.get(barcode, [])
+                log.write(f"提取的条码数量: {len(misjudgment_barcodes)}\n")
+                for barcode in misjudgment_barcodes:
+                    log.write(f"  - {barcode}: {len(barcode_to_misjudgment.get(barcode, []))}张图片\n")
                 
-                # 记录该条码的详细信息
-                barcode_details[barcode] = {
-                    'total_count': len(images),
-                    'misjudgment_images': barcode_to_misjudgment.get(barcode, []),
-                    'all_images': []
+                if progress_callback:
+                    progress_callback(10, 100, f"已提取 {len(misjudgment_barcodes)} 个条码，正在搜索同条码图片...")
+                
+                # 3. 在搜索根目录（向上2级）搜索所有同条码且包含"NG"的图片
+                # 例如：选择 E:\Image\2026-01-28-白班\检测拼接总图\NG 时，
+                # 会在 E:\Image\2026-01-28-白班\ 目录下搜索所有子文件夹中
+                # 文件名同时包含条码和"NG"的图片
+                search_root = BarcodeSearcher.get_search_root(folder_path)
+                log.write(f"搜索根目录: {search_root}\n")
+                log.write(f"搜索根目录是否存在: {os.path.exists(search_root)}\n")
+                
+                barcode_images = BarcodeSearcher.search_images_by_barcodes(
+                    search_root, 
+                    misjudgment_barcodes,
+                    ng_only=True  # 只搜索包含"NG"的图片
+                )
+                
+                log.write(f"搜索结果: {len(barcode_images)}个条码找到图片\n")
+                for barcode, imgs in barcode_images.items():
+                    log.write(f"  - {barcode}: {len(imgs)}张图片\n")
+                    for img in imgs[:5]:  # 只记录前5张图片路径
+                        log.write(f"    * {img}\n")
+                    if len(imgs) > 5:
+                        log.write(f"    ... 等{len(imgs) - 5}张图片\n")
+                
+                if progress_callback:
+                    progress_callback(30, 100, "搜索完成，正在准备导出...")
+                
+                # 4. 按条码创建文件夹并复制图片
+                total_images = 0
+                barcode_details = {}  # 用于生成清单
+                
+                barcode_count = len(misjudgment_barcodes)
+                log.write(f"开始复制图片，共{barcode_count}个条码\n")
+                
+                for idx, barcode in enumerate(misjudgment_barcodes):
+                    # 创建条码文件夹
+                    barcode_folder = os.path.join(output_folder, barcode)
+                    os.makedirs(barcode_folder, exist_ok=True)
+                    log.write(f"创建文件夹: {barcode_folder}\n")
+                    
+                    # 获取该条码的所有图片
+                    images = barcode_images.get(barcode, [])
+                    log.write(f"条码 {barcode} 找到 {len(images)} 张图片\n")
+                    
+                    # 记录该条码的详细信息
+                    barcode_details[barcode] = {
+                        'total_count': len(images),
+                        'misjudgment_images': barcode_to_misjudgment.get(barcode, []),
+                        'all_images': []
+                    }
+                    
+                    # 复制图片
+                    for img_path in images:
+                        img_name = os.path.basename(img_path)
+                        dest_path = os.path.join(barcode_folder, img_name)
+                        log.write(f"  复制: {img_path} -> {dest_path}\n")
+                        
+                        try:
+                            shutil.copy2(img_path, dest_path)
+                            barcode_details[barcode]['all_images'].append(img_name)
+                            total_images += 1
+                            log.write(f"  复制成功\n")
+                        except Exception as e:
+                            error_msg = f"复制文件失败: {img_path} -> {dest_path}, 错误: {e}"
+                            log.write(f"  复制失败: {e}\n")
+                            print(error_msg)
+                    
+                    # 更新进度
+                    if progress_callback:
+                        progress = 30 + int((idx + 1) / barcode_count * 60)
+                        progress_callback(
+                            progress, 
+                            100, 
+                            f"正在导出条码 {idx + 1}/{barcode_count}..."
+                        )
+                
+                if progress_callback:
+                    progress_callback(90, 100, "正在生成导出清单...")
+                
+                # 5. 生成详细清单文件
+                summary_file = os.path.join(output_folder, "导出清单.txt")
+                log.write(f"生成导出清单: {summary_file}\n")
+                
+                self._generate_export_summary(
+                    summary_file, 
+                    barcode_details,
+                    output_folder
+                )
+                
+                if progress_callback:
+                    progress_callback(100, 100, "导出完成！")
+                
+                # 返回统计信息
+                stats = {
+                    'total_barcodes': len(misjudgment_barcodes),
+                    'total_images': total_images,
+                    'barcode_details': barcode_details
                 }
                 
-                # 复制图片
-                for img_path in images:
-                    img_name = os.path.basename(img_path)
-                    dest_path = os.path.join(barcode_folder, img_name)
-                    
-                    try:
-                        shutil.copy2(img_path, dest_path)
-                        barcode_details[barcode]['all_images'].append(img_name)
-                        total_images += 1
-                    except Exception as e:
-                        print(f"复制文件失败: {img_path} -> {dest_path}, 错误: {e}")
+                log.write(f"[导出完成] {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                log.write(f"导出统计: {len(misjudgment_barcodes)}个条码组，共{total_images}张图片\n")
                 
-                # 更新进度
-                if progress_callback:
-                    progress = 30 + int((idx + 1) / barcode_count * 60)
-                    progress_callback(
-                        progress, 
-                        100, 
-                        f"正在导出条码 {idx + 1}/{barcode_count}..."
-                    )
-            
-            if progress_callback:
-                progress_callback(90, 100, "正在生成导出清单...")
-            
-            # 5. 生成详细清单文件
-            summary_file = os.path.join(output_folder, "导出清单.txt")
-            self._generate_export_summary(
-                summary_file, 
-                barcode_details,
-                output_folder
-            )
-            
-            if progress_callback:
-                progress_callback(100, 100, "导出完成！")
-            
-            # 返回统计信息
-            stats = {
-                'total_barcodes': len(misjudgment_barcodes),
-                'total_images': total_images,
-                'barcode_details': barcode_details
-            }
-            
-            return (True, f"成功导出 {len(misjudgment_barcodes)} 个条码组，共 {total_images} 张图片", stats)
+                return (True, f"成功导出 {len(misjudgment_barcodes)} 个条码组，共 {total_images} 张图片", stats)
             
         except Exception as e:
             import traceback
             error_msg = f"导出图片时发生错误: {e}\n{traceback.format_exc()}"
             print(error_msg)
+            
+            # 尝试记录错误到日志文件
+            try:
+                log_file = os.path.join(output_folder, "export_log.txt")
+                with open(log_file, 'a', encoding='utf-8') as log:
+                    log.write(f"[导出错误] {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                    log.write(f"错误信息: {e}\n")
+                    log.write(f"堆栈信息: {traceback.format_exc()}\n")
+            except:
+                pass
+            
             return (False, str(e), {})
     
     def _generate_export_summary(self, summary_file, barcode_details, output_folder):
